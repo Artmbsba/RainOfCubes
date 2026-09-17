@@ -1,7 +1,9 @@
-using System.Collections;
+using System;
 using UnityEngine;
-using UnityEngine.Pool;
 
+[RequireComponent(typeof(TouchController))]
+[RequireComponent(typeof(Counter))]
+[RequireComponent(typeof(ColorController))]
 [RequireComponent(typeof(Renderer))]
 [RequireComponent(typeof(Rigidbody))]
 public class Cube : MonoBehaviour
@@ -10,44 +12,61 @@ public class Cube : MonoBehaviour
     [SerializeField] private float _minLifeTime = 2.0f;
     [SerializeField] private float _maxLifeTime = 5.0f;
 
-    private ObjectPool<GameObject> _pool;
-    private Renderer _renderer;
-    private Rigidbody _rigidbody;
-    private bool _hasAlreadyBeenTouch;
+    public event Action<Cube> LifeTimeEnded;
 
-    public void SetPool(ObjectPool<GameObject> pool)
-    {
-        _pool = pool;
-    }
+    private ColorController _colorController;
+    private TouchController _touchController;
+    private Counter _counter;
+    private Rigidbody _rigidbody;
+    private Renderer _renderer;
+    private bool _hasAlreadyBeenTouch;
 
     private void Awake()
     {
+        _touchController = GetComponent<TouchController>();
+        _counter = GetComponent<Counter>();
         _renderer = GetComponent<Renderer>();
+        _colorController = GetComponent<ColorController>();
         _rigidbody = GetComponent<Rigidbody>();
     }
 
     private void OnEnable()
     {
+        _touchController.TouchHasOccurred += OnTouchOccurred;
+        _colorController.SetDefaultColor(_renderer, _color);
         _hasAlreadyBeenTouch = false;
-        _renderer.material.color = _color;
     }
 
-    private void OnCollisionEnter(Collision collision)
+    private void OnDisable()
+    {
+        _touchController.TouchHasOccurred -= OnTouchOccurred;
+    }
+
+    public Rigidbody GetRigidbody()
+    {
+        return _rigidbody;
+    }
+
+    private void OnTouchOccurred()
     {
         if (_hasAlreadyBeenTouch)
             return;
 
-        _renderer.material.color = Random.ColorHSV();
         _hasAlreadyBeenTouch = true;
+        _colorController.ChangingColorOfCube(_renderer);
 
-        StartCoroutine(ReturnToPoolAfterDelay());
+        StartLifeCounter();
     }
 
-    private IEnumerator ReturnToPoolAfterDelay()
+    private void StartLifeCounter()
     {
-        float lifeTime = Random.Range(_minLifeTime, _maxLifeTime);
-        yield return new WaitForSeconds(lifeTime);
+        float lifeTime = UnityEngine.Random.Range(_minLifeTime, _maxLifeTime);
 
-        _pool.Release(gameObject);
+        _counter.StartCounter(lifeTime, CompleteLifeTime);
+    }
+
+    private void CompleteLifeTime()
+    {
+        LifeTimeEnded?.Invoke(this);
     }
 }

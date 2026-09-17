@@ -1,51 +1,66 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Pool;
 
+[RequireComponent(typeof(Counter))]
 public class Spawner : MonoBehaviour
 {
-    [SerializeField] private GameObject _cubePrefab;
+    [SerializeField] private Cube _cubePrefab;
     [SerializeField] private Collider _mainPlatformCollaider;
     [SerializeField] private float _spawnHeight = 21;
-    [SerializeField] private float _repeatRate = 1;
+    [SerializeField] private float _delay = 1;
     [SerializeField] private int _poolCapacity = 10;
     [SerializeField] private int _poolMaxSize = 10;
 
-    private ObjectPool<GameObject> _pool;
+    private ObjectPool<Cube> _pool;
 
     private void Awake()
     {
-        _pool = new ObjectPool<GameObject>(
+        _pool = new ObjectPool<Cube>(
             createFunc: () => Instantiate(_cubePrefab),
-            actionOnGet: (obj) => ActionOnGet(obj),
-            actionOnRelease: (obj) => obj.SetActive(false),
-            actionOnDestroy: (obj) => Destroy(obj),
+            actionOnGet: (cube) => PrepareCube(cube),
+            actionOnRelease: (cube) => cube.gameObject.SetActive(false),
+            actionOnDestroy: (cube) => Destroy(cube),
             collectionCheck: true,
             defaultCapacity: _poolCapacity,
             maxSize: _poolMaxSize);
     }
-      
-    private void ActionOnGet(GameObject obj)
-    {
-        if (obj.TryGetComponent(out Cube cube))
-            cube.SetPool(_pool);
-
-        obj.transform.position = DefinePosition();
-        obj.transform.rotation = Quaternion.identity;
-        Rigidbody ridgidbody = obj.GetComponent<Rigidbody>();
-        ridgidbody.linearVelocity = Vector3.zero;
-        ridgidbody.angularVelocity = Vector3.zero;
-
-        obj.SetActive(true);
-    }
 
     private void Start()
     {
-        InvokeRepeating(nameof(GetCube), 0.0f, _repeatRate);
+        StartCoroutine(DelaySpawnCubes());
     }
 
-    private void GetCube()
+    private IEnumerator DelaySpawnCubes()
     {
-        _pool.Get();
+        var wait = new WaitForSeconds(_delay);
+
+        while (enabled)
+        {
+            yield return wait;
+
+            _pool.Get();
+        }
+    }
+
+    private void PrepareCube(Cube newCube)
+    {
+        newCube.LifeTimeEnded += OnCubeLifeTimeEnded;
+
+        newCube.transform.position = DefinePosition();
+        newCube.transform.rotation = Quaternion.identity;
+        Rigidbody ridgidbody = newCube.GetRigidbody();
+        ridgidbody.linearVelocity = Vector3.zero;
+        ridgidbody.angularVelocity = Vector3.zero;
+
+        newCube.gameObject.SetActive(true);
+    }
+
+    private void OnCubeLifeTimeEnded(Cube cube)
+    {
+        cube.LifeTimeEnded -= OnCubeLifeTimeEnded;
+
+        _pool.Release(cube);
     }
 
     private Vector3 DefinePosition()
