@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class TouchController : MonoBehaviour
+public class TouchDetector : MonoBehaviour
 {
     public event Action TouchHasOccurred;
 

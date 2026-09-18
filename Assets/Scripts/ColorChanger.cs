@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class ColorController : MonoBehaviour
+public class ColorChanger : MonoBehaviour
 {
     public void SetDefaultColor(Renderer renderer, Color color)
     {

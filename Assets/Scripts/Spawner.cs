@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Pool;
 
-[RequireComponent(typeof(Counter))]
+[RequireComponent(typeof(Timer))]
 public class Spawner : MonoBehaviour
 {
     [SerializeField] private Cube _cubePrefab;
@@ -49,7 +49,7 @@ public class Spawner : MonoBehaviour
 
         newCube.transform.position = DefinePosition();
         newCube.transform.rotation = Quaternion.identity;
-        Rigidbody ridgidbody = newCube.GetRigidbody();
+        Rigidbody ridgidbody = newCube.GetRigidbody;
         ridgidbody.linearVelocity = Vector3.zero;
         ridgidbody.angularVelocity = Vector3.zero;
 
